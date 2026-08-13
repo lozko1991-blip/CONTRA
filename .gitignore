@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.vscode/
+.idea/
+*.log
+.DS_Store
+*.png
+*.jpg
+*.jpeg
+.playwright-mcp/
+*.local

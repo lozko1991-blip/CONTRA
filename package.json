@@ -1,0 +1,24 @@
+{
+  "name": "kolda-cs16-web",
+  "version": "1.0.0",
+  "description": "Counter-Strike 1.6 Web Port - Vite + Three.js + Rapier + Firebase",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "vite build && gh-pages -d dist"
+  },
+  "type": "module",
+  "keywords": ["cs", "counter-strike", "webgl", "threejs", "rapier", "firebase"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.169.0",
+    "@dimforge/rapier3d-compat": "^0.19.3",
+    "firebase": "^10.14.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "gh-pages": "^3.2.3"
+  }
+}
