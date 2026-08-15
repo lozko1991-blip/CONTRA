@@ -98,7 +98,7 @@ class HostBot {
     this.yaw = Math.random() * Math.PI * 2;
 
     this.health = 100;
-    this.armor = 100;
+    this.armor = 0;
     this.alive = true;
     this.deathTimer = 0;
     this._dying = 0;
@@ -296,9 +296,6 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
     this._flashMesh = new THREE.Mesh(flashGeo, flashMat);
     this._flashMesh.renderOrder = 999;
     this.mesh.add(this._flashMesh);
-
-    this._flashLight = new THREE.PointLight(0xffaa33, 0, 2.5);
-    this.mesh.add(this._flashLight);
 
     this.scene.add(this.mesh);
   }
@@ -651,7 +648,7 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
     );
 
     this.health = 100;
-    this.armor = 100;
+    this.armor = 0;
     this.alive = true;
     this.deathTimer = 0;
     this._dying = 0;
@@ -1332,6 +1329,14 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
     }
 
     /**
+     * Відступ до укриття: бот НЕ стріляє, поки тікає
+     * (повертає увагу на бій після досягнення укриття).
+     */
+    if (this.coverTimer > 4.5 && this.stateTimer > 0) {
+      return;
+    }
+
+    /**
      * Ближній бій: мілі-зброя на дистанції < 3.2м.
      * Бот перемикається на ніж/ломик і б'є зблизька.
      */
@@ -1505,12 +1510,6 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
       this.muzzleFlashTime = 0.04;
     }
 
-    if (this._flashLight) {
-      this._flashLight.position.copy(origin).sub(this.position);
-      this._flashLight.intensity = 1.2;
-      this._flashLight.distance = 2.5;
-    }
-
     if (!result.hitTargetId) {
       return;
     }
@@ -1524,7 +1523,7 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
     }
 
     const weapon = this.weapon;
-    const zone = result.hitZone ?? 'chest';
+    let zone = result.hitZone ?? 'chest';
 
     let damage = weapon.damage;
 
@@ -1599,10 +1598,6 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
 
       if (this._flashMesh) {
         this._flashMesh.material.opacity = Math.max(0, this.muzzleFlashTime / 0.04 * 0.9);
-      }
-
-      if (this._flashLight) {
-        this._flashLight.intensity = Math.max(0, this.muzzleFlashTime / 0.04 * 1.2);
       }
     }
     this.stateTimer -= dt;
@@ -1946,30 +1941,39 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
 
       /**
        * Укриття під час бою:
-       * - HP < 35 — завжди шукає укриття;
-       * - HP < 60 — 35% шанс відступити (обережні боти частіше);
+       * - під обстрілом (в нас стріляють) — шукаємо укриття ЗАВЖДИ
+       *   (навіть якщо ворог не видимий — агрессор за стіною);
+       * - HP < 50 — завжди шукає укриття;
+       * - HP < 75 — 40% шанс відступити;
        * - перезарядка — ховається за укриття;
        * - ворог далеко і стріляє — camper ховається.
        */
       if (this.coverTimer <= 0) {
         let wantCover = false;
+        let coverFrom = target?.position ?? null;
 
-        if (this.health < 35) {
+        if (this.aggressorTimer > 0 && this.threatTimer > 2) {
           wantCover = true;
-        } else if (this.health < 60) {
-          wantCover = Math.random() < 0.35 * this.skill.aggression;
+
+          if (!coverFrom && this.lastThreat) {
+            coverFrom = this.lastThreat.clone();
+          }
+        } else if (this.health < 50) {
+          wantCover = true;
+        } else if (this.health < 75) {
+          wantCover = Math.random() < 0.4 * this.skill.aggression;
         } else if (this.weapon.magazine <= 3 && this.role !== 'rusher') {
           wantCover = Math.random() < 0.5;
-        } else if (this.role === 'camper' && distance > 18 && Math.random() < 0.15) {
+        } else if (this.role === 'camper' && distance > 18 && Math.random() < 0.2) {
           wantCover = true;
         }
 
-        if (wantCover) {
-          const cover = this.findCoverPoint(target.position);
+        if (wantCover && coverFrom) {
+          const cover = this.findCoverPoint(coverFrom);
 
           if (cover) {
             this.moveTarget.copy(cover);
-            this.coverTimer = 6;
+            this.coverTimer = 5;
             this.stateTimer = 2;
           }
         }
@@ -2419,9 +2423,6 @@ class ClientBot {
     this._flashMesh = new THREE.Mesh(flashGeo, flashMat);
     this._flashMesh.renderOrder = 999;
     this.mesh.add(this._flashMesh);
-
-    this._flashLight = new THREE.PointLight(0xffaa33, 0, 2.5);
-    this.mesh.add(this._flashLight);
 
     this.scene.add(this.mesh);
   }
