@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Counter-Strike 1.6 Web Port - Vite + Three.js + Rapier + Firebase",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "deploy": "vite build && gh-pages -d dist"

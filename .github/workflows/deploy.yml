@@ -18,11 +18,23 @@ jobs:
           cache: npm
       - run: npm install
       - run: npm run build
-      - uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: dist
-          enable_jekyll: false
-          publish_branch: gh-pages
-          user_name: 'github-actions[bot]'
-          user_email: '41898282+github-actions[bot]@users.noreply.github.com'
+
+      # GitHub Pages обслуговує корінь гілки main.
+      # Копіюємо збірку dist/ у корінь і комітимо з [skip ci],
+      # щоб не запускати цей же workflow по колу.
+      - name: Deploy dist to repo root
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          cp -r dist/index.html index.html
+          cp -r dist/.nojekyll .nojekyll
+          rm -rf assets
+          mkdir -p assets
+          cp -r dist/assets/* assets/
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "[skip ci] Deploy build to repo root"
+            git push origin HEAD:${GITHUB_REF#refs/heads/}
+          fi
