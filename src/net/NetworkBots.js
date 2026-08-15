@@ -14,22 +14,22 @@ import { HitScan } from '../weapons/HitScan.js';
 const BOT_ZONES = [
   {
     name: 'head',
-    half: [0.16, 0.18, 0.16],
+    half: [0.2, 0.22, 0.2],
     y: 1.45
   },
   {
     name: 'chest',
-    half: [0.26, 0.2, 0.18],
+    half: [0.3, 0.24, 0.22],
     y: 0.85
   },
   {
     name: 'stomach',
-    half: [0.2, 0.12, 0.15],
+    half: [0.24, 0.15, 0.18],
     y: 0.5
   },
   {
     name: 'legs',
-    half: [0.16, 0.32, 0.16],
+    half: [0.2, 0.36, 0.2],
     y: -0.1
   }
 ];
@@ -166,6 +166,9 @@ this.pathTimer = 0;
   this.money = 800;
   this.aggressorId = null;
   this.aggressorTimer = 0;
+  this._visionCacheKey = null;
+  this._visionCacheValue = false;
+  this._visionCacheTimer = 0;
 
 /**
  * Роль бота: rusher / camper / support.
@@ -238,6 +241,12 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
   }
 
   createHitboxes() {
+    /**
+     * Скидаємо масив колайдерів перед створенням нових
+     * (respawn видаляє body, а старі посилання лишались).
+     */
+    this.colliders = [];
+
     for (const zone of BOT_ZONES) {
       const colliderDesc = RAPIER.ColliderDesc.cuboid(
         zone.half[0],
@@ -1609,6 +1618,7 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
     this.burstPause -= dt;
     this.threatTimer -= dt;
     this.coverTimer -= dt;
+    this._visionCacheTimer = Math.max(0, (this._visionCacheTimer ?? 0) - dt);
     this.grenadeTimer -= dt;
     this.heardTimer = Math.max(0, this.heardTimer - dt);
     this.allyHelpTimer = Math.max(0, this.allyHelpTimer - dt);
@@ -1773,7 +1783,26 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
         continue;
       }
 
-      if (!this.canSee(enemy.getEyePosition())) {
+      /**
+       * Оптимізація зору: canSee кешується на 0.18с
+       * (бот "оновлює зір" ~5 разів/с, як людина).
+       * Без кешу: 9 ботів × 10 цілей × raycast = лаги.
+       */
+      let visible = false;
+
+      if (
+        this._visionCacheKey === enemy.playerId &&
+        this._visionCacheTimer > 0
+      ) {
+        visible = this._visionCacheValue;
+      } else {
+        visible = this.canSee(enemy.getEyePosition());
+        this._visionCacheKey = enemy.playerId;
+        this._visionCacheValue = visible;
+        this._visionCacheTimer = 0.18;
+      }
+
+      if (!visible) {
         continue;
       }
 
@@ -2368,6 +2397,12 @@ class ClientBot {
   }
 
   createHitboxes() {
+    /**
+     * Скидаємо масив колайдерів перед створенням нових
+     * (respawn видаляє body, а старі посилання лишались).
+     */
+    this.colliders = [];
+
     for (const zone of BOT_ZONES) {
       const colliderDesc = RAPIER.ColliderDesc.cuboid(
         zone.half[0],
@@ -2711,10 +2746,26 @@ export class NetworkBots {
       candidates[0] ??
       list[0];
 
+    /**
+     * Перевірка walkable: якщо спавн-точка всередині стіни/будівлі
+     * (погана точка на карті), шукаємо найближчу ходу.
+     */
+    let sx = spawn.x ?? 0;
+    let sz = spawn.z ?? 0;
+
+    if (this.navGrid && !this.navGrid.isWalkableWorld(sx, sz)) {
+      const nearest = this.navGrid.findNearestWalkable?.(sx, sz, 8);
+
+      if (nearest) {
+        sx = nearest.x;
+        sz = nearest.z;
+      }
+    }
+
     return {
-      x: spawn.x ?? 0,
+      x: sx,
       y: spawn.y ?? 0.9,
-      z: spawn.z ?? 0
+      z: sz
     };
   }
 
