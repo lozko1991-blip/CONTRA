@@ -152,6 +152,23 @@ class Game {
       }
     });
     document.body.appendChild(btn);
+
+    /**
+     * Повноекранний режим часто скидає Pointer Lock.
+     * Після входу у fullscreen відновлюємо lock з невеликою
+     * затримкою (браузер переініціалізує canvas).
+     */
+    document.addEventListener('fullscreenchange', () => {
+      if (document.fullscreenElement) {
+        setTimeout(() => {
+          this.relockPointer();
+        }, 150);
+      } else {
+        setTimeout(() => {
+          this.relockPointer();
+        }, 100);
+      }
+    });
   }
 
   applySettings(settings = {}) {
@@ -252,7 +269,8 @@ class Game {
     });
 
     this.settingsMenu = new SettingsMenu({
-      onChange: (settings) => this.applySettings(settings)
+      onChange: (settings) => this.applySettings(settings),
+      onClose: () => this.relockPointer()
     });
 
     this.applySettings(this.settingsMenu.settings);
@@ -1055,6 +1073,38 @@ class Game {
     this.camera.updateProjectionMatrix();
 
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  /**
+   * Відновлення Pointer Lock після закриття меню/ESC.
+   * Якщо гра активна (started, не matchover) і жодне меню
+   * не відкрите — повертаємо захоплення миші.
+   */
+  relockPointer() {
+    if (!this.started || !this.input) {
+      return;
+    }
+
+    if (this.matchOverScreen?.isVisible?.()) {
+      return;
+    }
+
+    if (this.buyMenu?.open) {
+      return;
+    }
+
+    if (this.settingsMenu?.open) {
+      return;
+    }
+
+    /**
+     * Pointer Lock можна відновити тільки після user gesture
+     * (клік/клавіша). ESC-натискання не є таким у деяких браузерах,
+     * тому пробуємо відновити при найближчому кліку/клавіші.
+     */
+    if (!this.input.pointerLocked) {
+      this.input.lock();
+    }
   }
 
   animate() {

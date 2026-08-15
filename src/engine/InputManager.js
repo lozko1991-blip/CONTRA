@@ -91,11 +91,34 @@ export class InputManager {
         promise.catch(() => {
           // Pointer Lock может быть отклонён браузером, например, если клик не был user gesture.
           // Это не критично.
+          this._armRelockOnNextGesture();
         });
       }
     } catch {
       // Некоторые браузеры могут бросать синхронную ошибку в отдельных сценариях.
+      this._armRelockOnNextGesture();
     }
+  }
+
+  /**
+   * Якщо браузер відхилив Pointer Lock (немає user gesture),
+   * чекаємо найближчий клік/клавішу і повторюємо спробу.
+   */
+  _armRelockOnNextGesture() {
+    if (this._relockArmed) return;
+    this._relockArmed = true;
+
+    const tryLock = () => {
+      this._relockArmed = false;
+      document.removeEventListener('pointerdown', tryLock);
+      document.removeEventListener('keydown', tryLock);
+      if (!this.pointerLocked) {
+        this.lock();
+      }
+    };
+
+    document.addEventListener('pointerdown', tryLock, { once: true });
+    document.addEventListener('keydown', tryLock, { once: true });
   }
 
   unlock() {
@@ -179,8 +202,28 @@ export class InputManager {
   }
 
   _onClick(event) {
-    if (event.target !== this.domElement) return;
+    /**
+     * Відновлюємо Pointer Lock при кліку, навіть якщо клік
+     * прийшов не по canvas (overlay, fullscreen, меню закрилось).
+     * Захист: не перехоплюємо кліки по інтерактивних елементах UI.
+     */
+    if (this.pointerLocked) return;
 
+    const target = event.target;
+    if (target && target.closest && target.closest('.hud-root, .scoreboard-root, .buy-menu, .settings-root, .chat-root, .lobby-root, .matchover-root, .nameplate-root')) {
+      return;
+    }
+
+    this.lock();
+  }
+
+  /**
+   * Глобальний клік: якщо Pointer Lock втрачено і гра активна,
+   * а клік прийшов по canvas — відновлюємо lock.
+   * Використовується для випадків, коли overlay/меню зникло,
+   * але click подія не дійшла до canvas (повноекранний режим).
+   */
+  relock() {
     if (!this.pointerLocked) {
       this.lock();
     }

@@ -68,8 +68,9 @@ const SETTINGS_CSS = `
 `;
 
 export class SettingsMenu {
-  constructor({ onChange = null } = {}) {
+  constructor({ onChange = null, onClose = null } = {}) {
     this.onChange = onChange;
+    this.onClose = onClose;
     this.open = false;
 
     this.settings = {
@@ -128,6 +129,12 @@ export class SettingsMenu {
   close() {
     this.open = false;
     this.root.classList.remove('open');
+
+    /**
+     * Після закриття меню повертаємо Pointer Lock
+     * (якщо гра активна і не відкриті інші меню).
+     */
+    this.onClose?.();
   }
 
   injectStyle() {
