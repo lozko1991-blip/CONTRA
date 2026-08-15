@@ -12,13 +12,15 @@
 hitscan-балістика з прострілами, тактичні боти, гранати з фізикою,
 економіка, MR15-матчі та онлайн-лобі без кодів кімнат.
 
-![Deploy](https://github.com/USERNAME/cs16-web/actions/workflows/deploy.yml/badge.svg)
+![Deploy](https://github.com/lozko1991-blip/CONTRA/actions/workflows/deploy.yml/badge.svg)
 ![Three.js](https://img.shields.io/badge/three.js-r169-045786)
 ![Physics](https://img.shields.io/badge/physics-rapier%20wasm-blue)
 ![Audio](https://img.shields.io/badge/audio-web%20audio%20api-orange)
 ![Pages](https://img.shields.io/badge/host-github%20pages-222)
 
-> Заміни `USERNAME` у бейджі на свій GitHub-нік.
+## ▶️ Грати
+
+**https://lozko1991-blip.github.io/CONTRA/**
 
 ---
 
@@ -120,13 +122,17 @@ Lobby (Firebase / BroadcastChannel)              ▼
 ## 04 // ШВИДКИЙ СТАРТ
 
 ```bash
-git clone https://github.com/USERNAME/cs16-web.git
-cd cs16-web
+git clone https://github.com/lozko1991-blip/CONTRA.git
+cd CONTRA
 npm install
 npm run dev
 ```
 
 Відкрий `http://localhost:5173`, зайди в лобі та стартуй.
+
+> **Важливо для розробників:** у корені `index.html` — це ЗБІРКА
+> (для GitHub Pages). Вихідний dev-варіант — `index.src.html`.
+> Команда `npm run dev` сама підміняє потрібний файл.
 
 ---
 
