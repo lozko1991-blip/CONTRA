@@ -90,9 +90,10 @@ const BUY_ITEMS = [
 ];
 
 export class BuyMenu {
-  constructor({ economy = null, onBuy = null } = {}) {
+  constructor({ economy = null, onBuy = null, onClose = null } = {}) {
     this.economy = economy;
     this.onBuy = onBuy;
+    this.onClose = onClose;
 
     this.enabled = false;
     this.open = false;
@@ -195,6 +196,7 @@ export class BuyMenu {
   hide() {
     this.open = false;
     this.root.style.display = 'none';
+    this.onClose?.();
   }
 
   setStatus(text) {

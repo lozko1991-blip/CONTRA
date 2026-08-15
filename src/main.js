@@ -257,13 +257,13 @@ class Game {
     this.input = new InputManager(this.renderer.domElement);
     this.input.attach();
 
-    const onFirstGesture = () => {
-      this.input?.lock();
-    };
-    window.addEventListener('click', onFirstGesture, { once: true });
-    window.addEventListener('mousedown', onFirstGesture, { once: true });
-    window.addEventListener('keydown', onFirstGesture, { once: true });
-
+    /**
+     * Перший клік після старту — захоплення миші.
+     * Використовуємо постійний обробник (не once), щоб
+     * передчасний клік під час завантаження WASM не "з'їв" gesture:
+     * InputManager._onClick сам лочить при кліку по canvas,
+     * а _armRelockOnNextGesture підхопить відхилення.
+     */
     this.renderer.domElement.addEventListener('click', () => {
       this.audio?.unlock();
     });
@@ -561,7 +561,8 @@ class Game {
 
     this.buyMenu = new BuyMenu({
       economy: this.economy,
-      onBuy: (itemId) => this.onBuyItem(itemId)
+      onBuy: (itemId) => this.onBuyItem(itemId),
+      onClose: () => this.relockPointer()
     });
 
     this.namePlates = new NamePlates();
@@ -648,6 +649,16 @@ class Game {
     window.addEventListener('resize', this.onResize);
 
     this.animate();
+
+    /**
+     * Автоматичне захоплення миші на старті:
+     * натискання START GAME — це user gesture, тож lock
+     * має спрацювати. Якщо браузер відхилить — клік по
+     * canvas або _armRelockOnNextGesture підхопить.
+     */
+    setTimeout(() => {
+      this.relockPointer();
+    }, 100);
   }
 
   initRenderer() {

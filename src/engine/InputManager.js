@@ -102,23 +102,37 @@ export class InputManager {
 
   /**
    * Якщо браузер відхилив Pointer Lock (немає user gesture),
-   * чекаємо найближчий клік/клавішу і повторюємо спробу.
+   * чекаємо найближчий КЛІК і повторюємо спробу.
+   * keydown НЕ є валідним gesture для Pointer Lock у Chrome,
+   * тому слухаємо тільки pointerdown/click.
    */
   _armRelockOnNextGesture() {
     if (this._relockArmed) return;
     this._relockArmed = true;
 
-    const tryLock = () => {
+    const tryLock = (event) => {
       this._relockArmed = false;
       document.removeEventListener('pointerdown', tryLock);
-      document.removeEventListener('keydown', tryLock);
+
+      /**
+       * Не лочимо кліки по інтерактивних UI-елементах
+       * (меню, скорборд, чат тощо).
+       */
+      const target = event.target;
+      if (
+        target &&
+        target.closest &&
+        target.closest('.hud-root, .scoreboard-root, .buy-menu, .settings-root, .chat-root, .lobby-root, .matchover-root, .nameplate-root')
+      ) {
+        return;
+      }
+
       if (!this.pointerLocked) {
         this.lock();
       }
     };
 
     document.addEventListener('pointerdown', tryLock, { once: true });
-    document.addEventListener('keydown', tryLock, { once: true });
   }
 
   unlock() {
