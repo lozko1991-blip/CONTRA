@@ -3,7 +3,8 @@
 > Версія: 1.0.0 (реліз)
 > Стек: Vite + Three.js (r169) + Rapier3D (r0.19) + Firebase
 > Ціль: повноцінний шутер CS-типу в браузері: соло з ботами, мультиплеєр до 10 гравців
-> Репозиторій: https://github.com/lozko1991-blip/kolda-cs16 (GitHub Pages: https://lozko1991-blip.github.io/kolda-cs16/)
+> Репозиторій: https://github.com/lozko1991-blip/CONTRA
+> GitHub Pages: https://lozko1991-blip.github.io/CONTRA/ — ✅ ЗАДЕПЛОЄНО І ПРАЦЮЄ
 
 ---
 
