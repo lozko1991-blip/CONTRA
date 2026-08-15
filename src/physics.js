@@ -212,7 +212,7 @@ export class PhysicsWorld {
    * @param {number} maxDistance
    * @param {Object|null} excludeCollider
    */
-  raycast(origin, direction, maxDistance = 100, excludeCollider = null) {
+  raycast(origin, direction, maxDistance = 100, excludeCollider = null, filterPredicate = null) {
     if (!this.world) return null;
 
     const dx = direction.x;
@@ -237,16 +237,27 @@ export class PhysicsWorld {
       dir
     );
 
-    const hit = excludeCollider
+    const hit = filterPredicate
       ? this.world.castRay(
           ray,
           maxDistance,
           true,
           undefined,
           undefined,
-          excludeCollider
+          excludeCollider,
+          undefined,
+          filterPredicate
         )
-      : this.world.castRay(ray, maxDistance, true);
+      : excludeCollider
+        ? this.world.castRay(
+            ray,
+            maxDistance,
+            true,
+            undefined,
+            undefined,
+            excludeCollider
+          )
+        : this.world.castRay(ray, maxDistance, true);
 
     if (!hit) return null;
 

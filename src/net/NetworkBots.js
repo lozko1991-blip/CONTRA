@@ -273,6 +273,20 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
     }
   }
 
+  /**
+   * Фільтр raycast: виключає ВСІ 4 hitbox-зони цього бота,
+   * щоб власне тіло не блокувало промінь (не спалювало бюджет
+   * і не заважало бачити/стріляти в ціль).
+   */
+  rayFilter(collider) {
+    const meta = this.physics.colliderMeta.get(collider.handle);
+
+    return !(
+      meta?.hostBot === this ||
+      meta?.clientBot === this
+    );
+  }
+
   createMesh() {
     if (this.mesh) return;
 
@@ -792,7 +806,8 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
         currentOrigin,
         dir,
         remaining,
-        exclude
+        exclude,
+        this.rayFilter ? (c) => this.rayFilter(c) : null
       );
 
       if (!hit) {
@@ -877,7 +892,8 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
         currentOrigin,
         dir,
         remaining,
-        exclude
+        exclude,
+        this.rayFilter ? (c) => this.rayFilter(c) : null
       );
 
       if (!hit) {
@@ -915,20 +931,8 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
         };
       }
 
-      if (hit.userData?.hostBot === this) {
-        const advance = Math.max(hit.distance ?? 0, 0.001) + 0.05;
-
-        currentOrigin = currentOrigin
-          .clone()
-          .addScaledVector(dir, advance);
-
-        remaining -= advance;
+      if (hit.userData?.hostBot === this || hit.userData?.clientBot === this) {
         exclude = hit.collider;
-
-        if (remaining <= 0.1) {
-          break;
-        }
-
         continue;
       }
 
