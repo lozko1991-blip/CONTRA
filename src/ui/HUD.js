@@ -626,6 +626,32 @@ export class HUD {
     });
   }
 
+  /**
+   * Цифра шкоди біля прицілу: гравець бачить СКІЛЬКИ HP
+   * у нього забрали (червона, зникає за 0.6с).
+   */
+  showDamageTaken(damage) {
+    if (!this.root || !damage) return;
+
+    const el = document.createElement('div');
+    el.className = 'hud-damage-taken';
+    el.textContent = `-${Math.round(damage)}`;
+    el.style.cssText =
+      'position:absolute;left:50%;top:50%;transform:translate(28px,-50%);' +
+      'font-family:monospace;font-size:17px;font-weight:700;color:#ff4040;' +
+      'text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;';
+
+    this.root.appendChild(el);
+
+    requestAnimationFrame(() => {
+      el.style.transition = 'transform 0.6s ease-out, opacity 0.6s ease-out';
+      el.style.transform = 'translate(28px,-140%)';
+      el.style.opacity = '0';
+    });
+
+    setTimeout(() => el.remove(), 700);
+  }
+
   showRoundResult(won) {
     if (!this.roundResult) return;
 

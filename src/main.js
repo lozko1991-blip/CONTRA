@@ -426,7 +426,7 @@ class Game {
           getEyePosition: () =>
             new THREE.Vector3(
               peer.position.x,
-              peer.position.y + 1.55,
+              peer.position.y + 0.81,
               peer.position.z
             ),
           getState: () => ({

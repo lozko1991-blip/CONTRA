@@ -590,7 +590,7 @@ export class GrenadeManager {
 
       const eye = {
         x: bot.position.x,
-        y: bot.position.y + 1.55,
+        y: bot.position.y + 0.81,
         z: bot.position.z
       };
 
@@ -722,7 +722,7 @@ export class GrenadeManager {
 
         const botEye = {
           x: bot.position.x,
-          y: bot.position.y + 1.55,
+          y: bot.position.y + 0.81,
           z: bot.position.z
         };
 

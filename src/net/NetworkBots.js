@@ -11,26 +11,33 @@ import { createCrowbar } from '../weapons/defs/Crowbar.js';
 import { HitScan } from '../weapons/HitScan.js';
 
 
+/**
+ * Hitbox-зони бота — ТОЧНО за моделлю SoldierModel:
+ *   голова центр: 0.81 (yHead 0.68 + HEAD_H*0.5 0.13)
+ *   груди центр:  0.45 (yChest 0.32 + CHEST_H*0.5 0.14)
+ *   живіт центр:  0.18 (стегна+пояс)
+ *   ноги центр:  -0.23 (від 0.08 вниз до -0.54)
+ */
 const BOT_ZONES = [
   {
     name: 'head',
-    half: [0.2, 0.22, 0.2],
-    y: 1.45
+    half: [0.17, 0.16, 0.17],
+    y: 0.81
   },
   {
     name: 'chest',
-    half: [0.3, 0.24, 0.22],
-    y: 0.85
+    half: [0.24, 0.16, 0.17],
+    y: 0.45
   },
   {
     name: 'stomach',
-    half: [0.24, 0.15, 0.18],
-    y: 0.5
+    half: [0.2, 0.13, 0.15],
+    y: 0.18
   },
   {
     name: 'legs',
-    half: [0.2, 0.36, 0.2],
-    y: -0.1
+    half: [0.16, 0.28, 0.16],
+    y: -0.23
   }
 ];
 
@@ -434,7 +441,7 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
 
       const eye = {
         x,
-        y: this.position.y + 1.55,
+        y: this.position.y + 0.81,
         z
       };
 
@@ -740,9 +747,14 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
   }
 
   getEyePosition() {
+    /**
+     * Реальна висота голови моделі: position.y + 0.81
+     * (раніше було +1.55 — на 70см над головою, боти стріляли
+     * над цілями).
+     */
     return this._eye.set(
       this.position.x,
-      this.position.y + 1.55,
+      this.position.y + 0.81,
       this.position.z
     );
   }
@@ -1454,6 +1466,13 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
   shootAt(target, enemies) {
     const aimPoint = this.leadTarget(target);
 
+    /**
+     * Цілимось у ГРУДИ цілі (на 0.35 нижче очей) —
+     * як CS-боти: стабільні влучання, голови випадають
+     * через розкид/зону.
+     */
+    aimPoint.y -= 0.35;
+
     const origin = this.getMuzzlePosition().clone();
 
     const dir = aimPoint.clone().sub(origin);
@@ -1799,7 +1818,7 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
         visible = this.canSee(enemy.getEyePosition());
         this._visionCacheKey = enemy.playerId;
         this._visionCacheValue = visible;
-        this._visionCacheTimer = 0.18;
+        this._visionCacheTimer = 0.1;
       }
 
       if (!visible) {
@@ -1868,7 +1887,7 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
         ) {
           const fakeTarget = {
             getEyePosition: () =>
-              this.lastKnownEnemy.clone().setY(this.position.y + 1.5),
+              this.lastKnownEnemy.clone().setY(this.position.y + 0.81),
             position: this.lastKnownEnemy,
             playerId: this.lastKnownEnemyId ?? 'last-known'
           };
@@ -1890,7 +1909,7 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
 
           const peekPoint = this.lastKnownEnemy.clone();
 
-          if (this.canSee(peekPoint.setY(this.position.y + 1.55))) {
+          if (this.canSee(peekPoint.setY(this.position.y + 0.81))) {
             this.currentTargetId = this.lastKnownEnemyId ?? null;
           }
         } else {
@@ -2679,7 +2698,7 @@ export class NetworkBots {
           position: bot.position,
           getEyePosition: () => {
             const eye = bot.getEyePosition?.();
-            return eye ? eye.clone() : bot.position.clone().setY(bot.position.y + 1.5);
+            return eye ? eye.clone() : bot.position.clone().setY(bot.position.y + 0.81);
           },
           getState: () => ({ position: bot.position }),
           velocity: bot.velocity ?? { x: 0, y: 0, z: 0 }

@@ -95,29 +95,31 @@ class RemotePlayer {
   createHitboxes() {
     /**
      * Зберігаємо всі коллайдери гравця для setTeam (оновлення meta).
+     * Зони ТОЧНО за моделлю SoldierModel (голова 0.81, груди 0.45,
+     * живіт 0.18, ноги -0.23).
      */
     this.colliders = [];
 
     const zones = [
       {
         name: 'head',
-        half: [0.16, 0.18, 0.16],
-        y: 1.45
+        half: [0.17, 0.16, 0.17],
+        y: 0.81
       },
       {
         name: 'chest',
-        half: [0.26, 0.2, 0.18],
-        y: 0.85
+        half: [0.24, 0.16, 0.17],
+        y: 0.45
       },
       {
         name: 'stomach',
-        half: [0.2, 0.12, 0.15],
-        y: 0.5
+        half: [0.2, 0.13, 0.15],
+        y: 0.18
       },
       {
         name: 'legs',
-        half: [0.16, 0.32, 0.16],
-        y: -0.1
+        half: [0.16, 0.28, 0.16],
+        y: -0.23
       }
     ];
 
@@ -855,6 +857,14 @@ export class NetworkManager {
 
     this.audio?.playDamage();
     this.hud?.damageFlash?.();
+
+    /**
+     * Фідбек: цифра шкоди біля прицілу — гравець бачить
+     * скільки HP забрали.
+     */
+    if (remaining > 0) {
+      this.hud?.showDamageTaken?.(remaining);
+    }
 
     /**
      * Напрямок атаки для індикатора на HUD.
