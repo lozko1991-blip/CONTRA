@@ -173,9 +173,7 @@ this.pathTimer = 0;
   this.money = 800;
   this.aggressorId = null;
   this.aggressorTimer = 0;
-  this._visionCacheKey = null;
-  this._visionCacheValue = false;
-  this._visionCacheTimer = 0;
+  this._visionCache = new Map();
 
 /**
  * Роль бота: rusher / camper / support.
@@ -1637,7 +1635,6 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
     this.burstPause -= dt;
     this.threatTimer -= dt;
     this.coverTimer -= dt;
-    this._visionCacheTimer = Math.max(0, (this._visionCacheTimer ?? 0) - dt);
     this.grenadeTimer -= dt;
     this.heardTimer = Math.max(0, this.heardTimer - dt);
     this.allyHelpTimer = Math.max(0, this.allyHelpTimer - dt);
@@ -1803,22 +1800,18 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
       }
 
       /**
-       * Оптимізація зору: canSee кешується на 0.18с
-       * (бот "оновлює зір" ~5 разів/с, як людина).
-       * Без кешу: 9 ботів × 10 цілей × raycast = лаги.
+       * Оптимізація зору: canSee кешується per-enemy (0.1с).
        */
       let visible = false;
 
-      if (
-        this._visionCacheKey === enemy.playerId &&
-        this._visionCacheTimer > 0
-      ) {
-        visible = this._visionCacheValue;
+      const cached = this._visionCache?.get(enemy.playerId);
+
+      if (cached && cached.t > 0) {
+        visible = cached.v;
+        cached.t -= dt;
       } else {
         visible = this.canSee(enemy.getEyePosition());
-        this._visionCacheKey = enemy.playerId;
-        this._visionCacheValue = visible;
-        this._visionCacheTimer = 0.1;
+        this._visionCache.set(enemy.playerId, { v: visible, t: 0.1 });
       }
 
       if (!visible) {
@@ -2954,9 +2947,9 @@ export class NetworkBots {
     bot.difficulty = diff;
 
     const skillPresets = {
-      hard:   { reaction: [0.08, 0.18], spread: [0.30, 0.50], aggression: [0.75, 0.95], aimSnap: 0.85, moveAccuracy: 0.6 },
-      medium: { reaction: [0.15, 0.26], spread: [0.55, 0.80], aggression: [0.50, 0.75], aimSnap: 0.70, moveAccuracy: 0.75 },
-      easy:   { reaction: [0.28, 0.42], spread: [0.90, 1.30], aggression: [0.25, 0.50], aimSnap: 0.50, moveAccuracy: 0.90 }
+      hard:   { reaction: [0.07, 0.14], spread: [0.30, 0.50], aggression: [0.75, 0.95], aimSnap: 0.85, moveAccuracy: 0.6 },
+      medium: { reaction: [0.12, 0.20], spread: [0.55, 0.80], aggression: [0.55, 0.80], aimSnap: 0.70, moveAccuracy: 0.75 },
+      easy:   { reaction: [0.20, 0.32], spread: [0.90, 1.30], aggression: [0.35, 0.60], aimSnap: 0.50, moveAccuracy: 0.90 }
     };
 
     const p = skillPresets[diff];

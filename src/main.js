@@ -1385,6 +1385,80 @@ class Game {
       botPositions = list.join(' ');
     }
 
+    /**
+     * Діагностика найближчого живого бота: чому він не вмирає /
+     * не реагує. Показує HP, Y, дистанцію, зір у обидва боки.
+     */
+    let nearestBotInfo = 'none';
+    if (hostBots && pl && this.physics && this.networkManager?.alive) {
+      let best = null;
+      let bestDist = Infinity;
+
+      for (const bot of hostBots.values()) {
+        if (!bot.alive) continue;
+        const d = pl.position.distanceTo(bot.position);
+        if (d < bestDist) {
+          bestDist = d;
+          best = bot;
+        }
+      }
+
+      if (best) {
+        const botEye = best.getEyePosition();
+        const playerEye = pl.getEyePosition();
+
+        const botSeesPlayer = best.canSee
+          ? best.canSee(playerEye)
+          : '?';
+
+        const toChest = new THREE.Vector3(
+          best.position.x - playerEye.x,
+          best.position.y + 0.45 - playerEye.y,
+          best.position.z - playerEye.z
+        );
+        const chestDist = toChest.length();
+        toChest.normalize();
+
+        let hitTag = 'clear';
+        let firstHitInfo = '';
+
+        for (let i = 0; i < 4; i++) {
+          const hit = this.physics.raycast(
+            playerEye,
+            toChest,
+            chestDist,
+            i === 0 ? pl.collider : null
+          );
+
+          if (!hit) {
+            hitTag = i === 0 ? 'REACHES BOT' : hitTag;
+            break;
+          }
+
+          if (
+            hit.userData?.hostBot === best ||
+            hit.userData?.playerId === best.id ||
+            hit.userData?.botId === best.id
+          ) {
+            hitTag = `HIT ${hit.userData?.hitZone ?? '?'}@${hit.distance.toFixed(2)}`;
+            break;
+          }
+
+          firstHitInfo +=
+            `>${hit.userData?.material ?? '?'}@${hit.distance.toFixed(2)}m`;
+
+          const adv = Math.max(hit.distance ?? 0, 0.001) + 0.08;
+          playerEye.addScaledVector(toChest, adv);
+        }
+
+        nearestBotInfo =
+          `${best.name} hp=${best.health} y=${best.position.y.toFixed(2)} ` +
+          `dist=${bestDist.toFixed(1)}m seesYou=${botSeesPlayer ? 'Y' : 'N'} ` +
+          `rayToChest: ${hitTag}${firstHitInfo} tgt=${best.currentTargetId ?? '-'} ` +
+          `diff=${best.difficulty}`;
+      }
+    }
+
     const pos = pl?.position;
 
     let meshCount = '?';
@@ -1466,6 +1540,7 @@ class Game {
       `mouseDelta: x=${this.input?.mouseDelta?.x?.toFixed(1) ?? 0} y=${this.input?.mouseDelta?.y?.toFixed(1) ?? 0}`,
       `doors: total=${doors?.size ?? 0} open=${openDoors} blocked=${blockedDoors}`,
       `bots: ${botCount} (host=${hostBots?.size ?? 0} client=${clientBots?.size ?? 0}) peers=${peerCount}`,
+      `nearest: ${nearestBotInfo}`,
       `botPos: ${botPositions || 'none'}`,
       `meshes: ${meshCount}`,
       `money=${this.economy?.money ?? '?'} health=${this.gameState?.health ?? '?'}`,
