@@ -269,9 +269,18 @@ export class BombSystem {
     this.plantedPos = null;
     this.droppedPos = null;
     this.progress = 0;
+    this.botDefuseProgress = 0;
     this.hidePrompt();
     this.timerEl.style.display = 'none';
     this.carrierEl.style.display = 'none';
+
+    /**
+     * Чистимо бомбові задачі ботів (інакше після раунду
+     * боти продовжать йти до старого сайту).
+     */
+    for (const bot of this.networkBots?.hostBots?.values() ?? []) {
+      bot.siteObjective = null;
+    }
   }
 
   _onKeyDown(event) {
@@ -459,6 +468,16 @@ export class BombSystem {
     this.timeLeft -= dt;
 
     /**
+     * Періодичний синк для клієнтів (раз на 1с),
+     * інакше їхній таймер бомби застигне.
+     */
+    this.syncAccumulator = (this.syncAccumulator ?? 0) + dt;
+    if (this.syncAccumulator >= 1) {
+      this.syncAccumulator = 0;
+      this.broadcast();
+    }
+
+    /**
      * Біпси з прискоренням: від 1с до 0.14с.
      */
     const fraction = Math.max(0, this.timeLeft / BOMB_TIMER);
@@ -625,6 +644,37 @@ export class BombSystem {
 
         if (damage > 0) {
           bot.applyDamage(damage, 'C4', 'c4', 'chest', center, 'bomb');
+        }
+      }
+    }
+
+    /**
+     * Віддалені гравці: хост надсилає їм шкоду від вибуху.
+     */
+    for (const peer of this.network?.peers?.values() ?? []) {
+      if (!peer.alive || !peer.position) continue;
+
+      const dist = Math.hypot(
+        peer.position.x - center.x,
+        peer.position.z - center.z
+      );
+
+      if (dist < EXPLODE_RADIUS) {
+        const damage = Math.round(
+          EXPLODE_MAX_DAMAGE * (1 - dist / EXPLODE_RADIUS)
+        );
+
+        if (damage > 0) {
+          this.network.send({
+            type: 'game:damage',
+            id: this.getLocalId(),
+            targetId: peer.id,
+            attackerId: 'bomb',
+            attackerName: 'C4',
+            damage,
+            weaponId: 'c4',
+            hitZone: 'chest'
+          });
         }
       }
     }

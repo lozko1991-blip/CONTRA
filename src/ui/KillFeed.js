@@ -82,6 +82,7 @@ export class KillFeed {
       knife: 'Knife',
       crowbar: 'Crowbar',
       bot_rifle: 'Bot Rifle',
+      c4: 'C4 Bomb',
       he: 'HE Grenade',
       flash: 'Flashbang',
       smoke: 'Smoke'
