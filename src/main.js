@@ -38,6 +38,7 @@ import { HostMigration } from './net/HostMigration.js';
 import { Dog } from './ai/Dog.js';
 import { NamePlates } from './ui/NamePlates.js';
 import { createSkybox, SKY_PRESETS } from './engine/Skybox.js';
+import { BombSystem } from './game/BombSystem.js';
 
 class Game {
   constructor() {
@@ -584,6 +585,27 @@ class Game {
     });
 
     /**
+     * Бомба (C4): plant / defuse / explosion.
+     */
+    this.bombSystem = new BombSystem({
+      scene: this.scene,
+      physics: this.physics,
+      network: this.networkManager,
+      networkBots: this.networkBots,
+      hud: this.hud,
+      audio: this.audio
+    });
+
+    this.bombSystem.setup(mapDefinition.bombSites ?? []);
+    this.bombSystem.attachRoundManager(this.roundManager);
+    this.bombSystem.onRoundEnd = (winner) => {
+      if (this.roundManager.phase === 'live') {
+        this.roundManager.endRound(winner);
+      }
+    };
+    this.roundManager.bomb = this.bombSystem;
+
+    /**
      * Розводимо мережеві повідомлення без дублювання.
      */
     const originalLobbyMessageHandler = this.lobby.onAnyMessage;
@@ -608,6 +630,7 @@ class Game {
         networkBotsMessageHandler?.(message);
         this.grenadeManager?.handleMessage?.(message);
         this.doorSystem?.handleMessage?.(message);
+        this.bombSystem?.handleMessage?.(message);
       }
 
       if (
@@ -1147,9 +1170,15 @@ class Game {
 
     /**
      * ПКМ (zoom): зменшення FOV для «прицілювання».
+     * AWP: снайперський скоуп FOV 20.
      */
+    const awpScoped =
+      this.weaponManager?.current?.id === 'awp' &&
+      this.weaponManager?.zoomActive;
+
     if (this.weaponManager?.zoomActive) {
-      this.camera.fov += (55 - this.camera.fov) * Math.min(1, dt * 12);
+      const zoomFov = awpScoped ? 20 : 55;
+      this.camera.fov += (zoomFov - this.camera.fov) * Math.min(1, dt * 12);
     } else {
       const targetFov = this.settingsMenu?.settings?.fov ?? 90;
       this.camera.fov += (targetFov - this.camera.fov) * Math.min(1, dt * 10);
@@ -1165,7 +1194,16 @@ class Game {
     }
 
     if (this.viewModel && this.player) {
-      this.viewModel.root.visible = this.weaponManager?.enabled !== false;
+      /**
+       * AWP у скоупі: модель зброї ховається (як у CS,
+       * тільки приціл-круг).
+       */
+      const awpScoped =
+        this.weaponManager?.current?.id === 'awp' &&
+        this.weaponManager?.zoomActive;
+
+      this.viewModel.root.visible =
+        this.weaponManager?.enabled !== false && !awpScoped;
 
       this.viewModel.update(dt, {
         speed: Math.hypot(
@@ -1214,6 +1252,10 @@ class Game {
 
     if (this.grenadeManager) {
       this.grenadeManager.update(dt);
+    }
+
+    if (this.bombSystem && this.roundManager?.phase === 'live') {
+      this.bombSystem.update(dt);
     }
 
     if (this.hud && this.economy) {

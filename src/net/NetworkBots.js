@@ -2167,6 +2167,28 @@ this.grenadeThrowCooldown = 8 + Math.random() * 10;
       this.previousTargetId = null;
 
       /**
+       * Бомбова задача (носій іде до сайту / CT до бомби):
+       * BombSystem ставить siteObjective — бот йде туди
+       * замість патруля. При виденні ворога воює звичайно.
+       */
+      if (this.siteObjective) {
+        const dist = Math.hypot(
+          this.siteObjective.x - this.position.x,
+          this.siteObjective.z - this.position.z
+        );
+
+        if (dist > 1.4) {
+          this.moveTo(this.siteObjective, 4.6, dt);
+        } else if (this.stateTimer <= 0) {
+          this.stateTimer = 0.5;
+        }
+
+        this.facePoint(this.siteObjective, dt);
+        this.updateBody();
+        return;
+      }
+
+      /**
        * Camper: тримає позицію (перший раз займає точку біля спавна),
        * не патрулює безцільно.
        */

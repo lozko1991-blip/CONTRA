@@ -160,10 +160,18 @@ export class RoundManager {
     if (this.phase === 'buy' && this.timeLeft <= 0) {
       this.startLive();
     } else if (this.phase === 'live') {
-      this.checkEndCondition();
+      /**
+       * Бомба: якщо поставлена — таймер раунду не завершує
+       * раунд (вирішує бомба: вибух = T, деф'юз = CT).
+       */
+      const planted = this.bomb?.isPlanted?.() === true;
 
-      if (this.timeLeft <= 0) {
-        this.endRound('CT');
+      if (!planted) {
+        this.checkEndCondition();
+
+        if (this.timeLeft <= 0) {
+          this.endRound('CT');
+        }
       }
     } else if (this.phase === 'ended' && this.timeLeft <= 0) {
       this.startBuy(true);
@@ -176,6 +184,7 @@ export class RoundManager {
       this.sendAccumulator = 0;
     }
   }
+
 
   startBuy(incrementRound) {
     if (incrementRound) {
@@ -229,6 +238,11 @@ export class RoundManager {
 
     this.network?.hud?.startRound?.(this.timeLeft);
 
+    /**
+     * Бомба: призначаємо носія (випадковий T) на початку live.
+     */
+    this.bomb?.startRound?.();
+
     this.sendState();
   }
 
@@ -236,6 +250,8 @@ export class RoundManager {
     if (this.phase === 'ended' || this.phase === 'matchover') {
       return;
     }
+
+    this.bomb?.reset?.();
 
     if (winnerTeam && this.scores[winnerTeam] != null) {
       this.scores[winnerTeam]++;
@@ -336,11 +352,15 @@ export class RoundManager {
   checkEndCondition() {
     const alive = this.countAlive();
 
+    /**
+     * Бомба поставлена: смерть усіх T НЕ завершує раунд —
+     * CT мусять розмінувати (або бомба вибухне).
+     */
     if (alive.CT <= 0 && alive.T <= 0) {
       this.endRound(null);
     } else if (alive.CT <= 0) {
       this.endRound('T');
-    } else if (alive.T <= 0) {
+    } else if (alive.T <= 0 && !this.bomb?.isPlanted?.()) {
       this.endRound('CT');
     }
   }

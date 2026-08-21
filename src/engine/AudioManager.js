@@ -695,6 +695,45 @@ export class AudioManager {
     });
   }
 
+  /**
+   * Біп бомби C4: короткий високий тон.
+   */
+  playBombBeep() {
+    if (!this.ctx) this.unlock();
+    if (!this.ctx || !this.enabled) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    osc.type = 'square';
+    osc.frequency.value = 2200;
+
+    const envelope = this.ctx.createGain();
+    envelope.gain.setValueAtTime(0.12, t);
+    envelope.gain.exponentialRampToValueAtTime(0.01, t + 0.08);
+
+    osc.connect(envelope);
+    envelope.connect(this.master);
+
+    osc.start(t);
+    osc.stop(t + 0.09);
+  }
+
+  /**
+   * Великий вибух бомби: низький гуркіт з довгим хвостом.
+   */
+  playBombExplosion() {
+    if (!this.ctx) this.unlock();
+    if (!this.ctx || !this.enabled) return;
+
+    this.noiseBurst(this.master, {
+      duration: 1.2,
+      gain: 0.5,
+      filterType: 'lowpass',
+      freq: 320,
+      rate: 0.6
+    });
+  }
+
   playBark(position = null) {
     if (!this.ctx) this.unlock();
     if (!this.ctx || !this.enabled) return;

@@ -5,6 +5,9 @@ import { createM4A1 } from './defs/M4A1.js';
 import { createDesertEagle } from './defs/DesertEagle.js';
 import { createKnife } from './defs/Knife.js';
 import { createCrowbar } from './defs/Crowbar.js';
+import { createMP5 } from './defs/MP5.js';
+import { createAWP } from './defs/AWP.js';
+import { createM3 } from './defs/M3.js';
 
 /**
  * Базова швидкість бігу (units/s), від якої рахуємо множник
@@ -89,7 +92,10 @@ export class WeaponManager {
       m4a1: createM4A1(),
       deagle: createDesertEagle(),
       knife: createKnife(),
-      crowbar: createCrowbar()
+      crowbar: createCrowbar(),
+      mp5: createMP5(),
+      awp: createAWP(),
+      m3: createM3()
     };
 
     this.current = this.weapons.ak47;
@@ -186,6 +192,12 @@ export class WeaponManager {
       this.selectWeapon('knife');
     } else if (this.input.isDown('Digit5')) {
       this.selectWeapon('crowbar');
+    } else if (this.input.isDown('Digit6')) {
+      this.selectWeapon('mp5');
+    } else if (this.input.isDown('Digit7')) {
+      this.selectWeapon('awp');
+    } else if (this.input.isDown('Digit8')) {
+      this.selectWeapon('m3');
     }
   }
 
@@ -194,7 +206,7 @@ export class WeaponManager {
    * direction: 1 = scroll up (previous), -1 = scroll down (next)
    */
   cycleWeapon(direction = -1) {
-    const order = ['ak47', 'm4a1', 'deagle', 'knife', 'crowbar'];
+    const order = ['ak47', 'm4a1', 'deagle', 'mp5', 'awp', 'm3', 'knife', 'crowbar'];
 
     const grenades = [];
 
@@ -437,7 +449,16 @@ export class WeaponManager {
     const playerState = this.player.getState();
     const baseDirection = this.player.getDirection();
 
-    const spread = this.current.getCurrentSpread(playerState);
+    let spread = this.current.getCurrentSpread(playerState);
+
+    /**
+     * AWP без скоупа — стріляє "від стегна": точність жахлива
+     * (як у CS). У скоупі (ПКМ) — снайперська точність.
+     */
+    if (this.current.id === 'awp' && !this.zoomActive) {
+      spread *= 10;
+    }
+
     const direction = this.applySpread(baseDirection, spread);
 
     const origin = this.player.getEyePosition();

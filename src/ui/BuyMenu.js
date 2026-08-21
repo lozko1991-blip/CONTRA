@@ -83,10 +83,13 @@ const BUY_ITEMS = [
   { key: '1', id: 'ak47', name: 'AK-47' },
   { key: '2', id: 'm4a1', name: 'M4A1' },
   { key: '3', id: 'deagle', name: 'Desert Eagle' },
-  { key: '4', id: 'armor', name: 'Kevlar Armor' },
-  { key: '5', id: 'he', name: 'HE Grenade' },
-  { key: '6', id: 'flash', name: 'Flashbang' },
-  { key: '7', id: 'smoke', name: 'Smoke Grenade' }
+  { key: '4', id: 'mp5', name: 'MP5' },
+  { key: '5', id: 'awp', name: 'AWP' },
+  { key: '6', id: 'm3', name: 'M3 Shotgun' },
+  { key: '7', id: 'armor', name: 'Kevlar Armor' },
+  { key: '8', id: 'he', name: 'HE Grenade' },
+  { key: '9', id: 'flash', name: 'Flashbang' },
+  { key: '0', id: 'smoke', name: 'Smoke Grenade' }
 ];
 
 export class BuyMenu {
